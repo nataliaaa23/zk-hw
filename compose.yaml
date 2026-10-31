@@ -1,0 +1,50 @@
+services:
+  zk1:
+    image: zookeeper:3.9.6
+    container_name: zk1
+    hostname: zk1
+    restart: "no"
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zk1:2888:3888;2181 server.2=zk2:2888:3888;2181 server.3=zk3:2888:3888;2181
+      ZOO_4LW_COMMANDS_WHITELIST: "srvr,stat,ruok,mntr"
+    volumes:
+      - zk1-data:/data
+      - zk1-datalog:/datalog
+  zk2:
+    image: zookeeper:3.9.6
+    container_name: zk2
+    hostname: zk2
+    restart: "no"
+    ports:
+      - "2182:2181"
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zk1:2888:3888;2181 server.2=zk2:2888:3888;2181 server.3=zk3:2888:3888;2181
+      ZOO_4LW_COMMANDS_WHITELIST: "srvr,stat,ruok,mntr"
+    volumes:
+      - zk2-data:/data
+      - zk2-datalog:/datalog
+  zk3:
+    image: zookeeper:3.9.6
+    container_name: zk3
+    hostname: zk3
+    restart: "no"
+    ports:
+      - "2183:2181"
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zk1:2888:3888;2181 server.2=zk2:2888:3888;2181 server.3=zk3:2888:3888;2181
+      ZOO_4LW_COMMANDS_WHITELIST: "srvr,stat,ruok,mntr"
+    volumes:
+      - zk3-data:/data
+      - zk3-datalog:/datalog
+volumes:
+  zk1-data:
+  zk1-datalog:
+  zk2-data:
+  zk2-datalog:
+  zk3-data:
+  zk3-datalog:

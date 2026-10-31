@@ -1,0 +1,82 @@
+Выводы команд этапа 2 (ансамбль ZooKeeper 3.9.6 в Docker). Текст переписан с экрана PowerShell.
+
+> docker ps
+CONTAINER ID   IMAGE             COMMAND                  CREATED          STATUS          PORTS                                         NAMES
+8655e3bd5884   zookeeper:3.9.6   "/docker-entrypoint...."   12 seconds ago   Up 12 seconds   0.0.0.0:2182->2181/tcp, [::]:2182->2181/tcp   zk2
+8bdf2fed7356   zookeeper:3.9.6   "/docker-entrypoint...."   13 seconds ago   Up 12 seconds   0.0.0.0:2181->2181/tcp, [::]:2181->2181/tcp   zk1
+5b859dbc6e4d   zookeeper:3.9.6   "/docker-entrypoint...."   13 seconds ago   Up 12 seconds   0.0.0.0:2183->2181/tcp, [::]:2183->2181/tcp   zk3
+
+> docker exec zk1 zkServer.sh status
+ZooKeeper JMX enabled by default
+Using config: /conf/zoo.cfg
+Client port found: 2181. Client address: localhost. Client SSL: false.
+Mode: follower
+> docker exec zk2 zkServer.sh status
+Mode: follower
+> docker exec zk3 zkServer.sh status
+Mode: leader
+
+> docker exec zk1 cat /conf/zoo.cfg
+dataDir=/data
+dataLogDir=/datalog
+tickTime=2000
+initLimit=5
+syncLimit=2
+autopurge.snapRetainCount=3
+autopurge.purgeInterval=0
+maxClientCnxns=60
+standaloneEnabled=true
+admin.enableServer=true
+server.1=zk1:2888:3888;2181
+server.2=zk2:2888:3888;2181
+server.3=zk3:2888:3888;2181
+4lw.commands.whitelist=srvr,stat,ruok,mntr
+> docker exec zk1 cat /data/myid
+1
+
+> docker stop zk3
+zk3
+> docker exec zk1 zkServer.sh status
+Mode: follower
+> docker exec zk2 zkServer.sh status
+Mode: leader
+> docker exec zk1 zkCli.sh -server localhost:2181 create /test hello
+Created /test
+> docker exec zk2 zkCli.sh -server localhost:2181 get /test
+hello
+
+> docker stop zk2
+zk2
+> docker exec zk1 zkServer.sh status
+Error contacting service. It is probably not running.
+
+> docker start zk2
+zk2
+> docker start zk3
+zk3
+> docker exec zk1 zkServer.sh status
+Mode: leader
+> docker exec zk2 zkServer.sh status
+Mode: follower
+> docker exec zk3 zkServer.sh status
+Mode: follower
+> docker exec zk3 zkCli.sh -server localhost:2181 get /test
+hello
+
+Окно A (zk1):
+[zk: localhost:2181(CONNECTED) 0] create -e /eph data
+Created /eph
+[zk: localhost:2181(CONNECTED) 1] ls /
+[eph, test, zookeeper]
+
+Окно B (zk2), окно A открыто:
+[zk: localhost:2181(CONNECTED) 0] ls /
+[eph, test, zookeeper]
+[zk: localhost:2181(CONNECTED) 1] get /eph
+data
+
+Окно B после закрытия окна A:
+[zk: localhost:2181(CONNECTED) 2] ls /
+[test, zookeeper]
+[zk: localhost:2181(CONNECTED) 3] get /eph
+Node does not exist: /eph
